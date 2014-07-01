@@ -9,9 +9,6 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
 import org.jbpm.test.JBPMHelper;
-import org.kie.api.KieBase;
-import org.kie.api.KieServices;
-import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.manager.RuntimeEngine;
 import org.kie.api.runtime.manager.RuntimeEnvironmentBuilder;
@@ -43,13 +40,9 @@ public class EvaluationExampleKJarFromGuvnor {
 	public static void main(String[] args) throws Exception {
 		JBPMHelper.setupDataSource();
 		
-		KieServices ks = KieServices.Factory.get(); 
-		KieContainer kContainer = ks.newKieContainer(ks.newReleaseId("org.jbpm", "Evaluation", "1.0"));
-		KieBase kbase = kContainer.newKieBase(ks.newKieBaseConfiguration()); 
-		
 		EntityManagerFactory emf = Persistence.createEntityManagerFactory("org.jbpm.persistence.jpa");
 		RuntimeEnvironmentBuilder builder = RuntimeEnvironmentBuilder.Factory.get()
-			.newDefaultBuilder().entityManagerFactory(emf).knowledgeBase(kbase)
+			.newDefaultBuilder("org.jbpm", "Evaluation", "1.0").entityManagerFactory(emf)
 			.userGroupCallback(new UserGroupCallback() {
 				public List<String> getGroupsForUser(String userId, List<String> groupIds, List<String> allExistingGroupIds) {
 					List<String> result = new ArrayList<String>();
