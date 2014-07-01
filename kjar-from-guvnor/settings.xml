@@ -1,0 +1,36 @@
+<settings>
+  <servers>
+    <server>  
+      <id>guvnor-m2-repo</id>  
+      <username>krisv</username>  
+      <password>krisv</password>  
+      <configuration>  
+        <httpConfiguration>
+          <put>
+            <params>
+              <param>
+                <name>http.authentication.preemptive</name>
+                <value>%b,true</value>
+              </param>
+            </params>
+          </put>
+        </httpConfiguration>
+      </configuration>  
+    </server>
+  </servers>
+  <profiles>
+    <profile>
+      <id>guvnor-m2-profile</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <repositories>
+        <repository>
+          <id>guvnor-m2-repo</id>
+          <name>Guvnor M2 Repo</name>
+          <url>http://localhost:8080/jbpm-console/maven2</url>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
+</settings>
