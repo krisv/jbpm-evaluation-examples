@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.manager.RuntimeEngine;
 import org.kie.api.runtime.process.ProcessInstance;
 import org.kie.api.task.TaskService;
 import org.kie.api.task.model.TaskSummary;
-import org.kie.services.client.api.RemoteRestRuntimeEngineFactory;
-import org.kie.services.client.api.command.RemoteRuntimeEngine;
+import org.kie.remote.client.api.RemoteRuntimeEngineFactory;
 
 /**
  * Example that uses the remote Java Client (through REST) to connect to the execution server
@@ -27,11 +27,11 @@ import org.kie.services.client.api.command.RemoteRuntimeEngine;
 public class EvaluationExampleJavaThroughREST {
 
 	public static void main(String[] args) throws Exception {
-		RemoteRuntimeEngine engine = RemoteRestRuntimeEngineFactory.newBuilder()
+		RuntimeEngine engine = RemoteRuntimeEngineFactory.newRestBuilder()
 			.addUrl(new URL("http://localhost:8080/jbpm-console"))
 			.addUserName("krisv").addPassword("krisv")
 			.addDeploymentId("org.jbpm:Evaluation:1.0")
-				.build().newRuntimeEngine();
+				.build();
 		KieSession ksession = engine.getKieSession();
 		TaskService taskService = engine.getTaskService();
 		
@@ -53,11 +53,11 @@ public class EvaluationExampleJavaThroughREST {
 		taskService.complete(task.getId(), "krisv", results);
 		
 		// john from HR
-		engine = RemoteRestRuntimeEngineFactory.newBuilder()
+		engine = RemoteRuntimeEngineFactory.newRestBuilder()
 			.addUrl(new URL("http://localhost:8080/jbpm-console"))
 			.addUserName("john").addPassword("john")
 			.addDeploymentId("org.jbpm:Evaluation:1.0")
-				.build().newRuntimeEngine();
+				.build();
 		ksession = engine.getKieSession();
 		taskService = engine.getTaskService();
 		
@@ -71,11 +71,11 @@ public class EvaluationExampleJavaThroughREST {
 		taskService.complete(task.getId(), "john", results);
 		
 		// mary from PM
-		engine = RemoteRestRuntimeEngineFactory.newBuilder()
+		engine = RemoteRuntimeEngineFactory.newRestBuilder()
 			.addUrl(new URL("http://localhost:8080/jbpm-console"))
 			.addUserName("mary").addPassword("mary")
 			.addDeploymentId("org.jbpm:Evaluation:1.0")
-				.build().newRuntimeEngine();
+				.build();
 		ksession = engine.getKieSession();
 		taskService = engine.getTaskService();
 

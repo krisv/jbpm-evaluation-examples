@@ -14,7 +14,7 @@
   <description>Parent POM for the evaluation examples</description>
 
   <properties>
-    <jbpm.version>6.1.0-SNAPSHOT</jbpm.version>
+    <jbpm.version>6.2.0-SNAPSHOT</jbpm.version>
   </properties>
 
   <repositories>
