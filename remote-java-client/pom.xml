@@ -20,8 +20,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.kie.remote</groupId>
-      <artifactId>kie-remote-client</artifactId>
+      <groupId>org.kie.server</groupId>
+      <artifactId>kie-server-client</artifactId>
     </dependency>
   </dependencies>
 

@@ -2,7 +2,10 @@ package org.jbpm.evaluation;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
@@ -38,101 +41,132 @@ public class EvaluationExampleREST {
 
 	public static void main(String[] args) throws Exception {
 		// start a new process instance
-		URL url = new URL("http://localhost:8080/jbpm-console/rest/runtime/org.jbpm:Evaluation:1.0/process/evaluation/start?map_employee=krisv&map_reason=Need%20a%20raise");
+		URL url = new URL("http://localhost:8080/kie-server/services/rest/server/containers/evaluation_1.0.0-SNAPSHOT/processes/evaluation/instances");
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		conn.setRequestMethod("POST");
-		conn.setRequestProperty("Content", "application/json");
+		conn.setRequestProperty("Content-Type", "application/json");
 		conn.setRequestProperty("Authorization", "Basic " + Base64Util.encode("krisv:krisv"));
-		String response = new BufferedReader(new InputStreamReader((conn.getInputStream()))).readLine();
-		// System.out.println(format(response));
-		String processInstanceId = getXPathValue(response, "/process-instance-response/id");
+		conn.setDoOutput(true);
+		String input = "{ \"employee\": \"krisv\", \"reason\": \"need 2 raise\" }";
+		OutputStream os = conn.getOutputStream();
+		os.write(input.getBytes());
+		os.flush();
+		String processInstanceId = readInputStream(conn.getInputStream());
 		System.out.println("Start Evaluation process " + processInstanceId);
 		
 		// complete Self Evaluation
-		url = new URL("http://localhost:8080/jbpm-console/rest/task/query?taskOwner=krisv&processInstanceId=" + processInstanceId);
+		url = new URL("http://localhost:8080/kie-server/services/rest/server/queries/tasks/instances/process/" + processInstanceId);
 		conn = (HttpURLConnection) url.openConnection();
 		conn.setRequestMethod("GET");
 		conn.setRequestProperty("Authorization", "Basic " + Base64Util.encode("krisv:krisv"));
-		response = new BufferedReader(new InputStreamReader((conn.getInputStream()))).readLine();
-		// System.out.println(format(response));
-		String taskId = getXPathValue(response, "/task-summary-list-response/task-summary/id");
-		String name = getXPathValue(response, "/task-summary-list-response/task-summary/name");
-		String description = getXPathValue(response, "/task-summary-list-response/task-summary/description");
+		String response = readInputStream(conn.getInputStream());
+		// System.out.println(response);
+		String taskId = getXPathValue(response, "/task-summary-list/task-summary/task-id");
+		String name = getXPathValue(response, "/task-summary-list/task-summary/task-name");
+		String description = getXPathValue(response, "/task-summary-list/task-summary/task-description");
 		System.out.println("'krisv' completing task " + name + ": " + description);
-		url = new URL("http://localhost:8080/jbpm-console/rest/task/" + taskId + "/start");
+		url = new URL("http://localhost:8080/kie-server/services/rest/server/containers/evaluation_1.0.0-SNAPSHOT/tasks/" + taskId + "/states/started");
 		conn = (HttpURLConnection) url.openConnection();
-		conn.setRequestMethod("POST");
+		conn.setRequestMethod("PUT");
 		conn.setRequestProperty("Authorization", "Basic " + Base64Util.encode("krisv:krisv"));
-		response = new BufferedReader(new InputStreamReader((conn.getInputStream()))).readLine();
+		response = readInputStream(conn.getInputStream());
 		// System.out.println(format(response));
-		url = new URL("http://localhost:8080/jbpm-console/rest/task/" + taskId + "/complete?map_performance=exceeding");
+		url = new URL("http://localhost:8080/kie-server/services/rest/server/containers/evaluation_1.0.0-SNAPSHOT/tasks/" + taskId + "/states/completed");
 		conn = (HttpURLConnection) url.openConnection();
-		conn.setRequestMethod("POST");
+		conn.setRequestMethod("PUT");
+		conn.setRequestProperty("Content-Type", "application/json");
 		conn.setRequestProperty("Authorization", "Basic " + Base64Util.encode("krisv:krisv"));
-		response = new BufferedReader(new InputStreamReader((conn.getInputStream()))).readLine();
+		conn.setDoOutput(true);
+		input = "{ \"performance\": \"10\" }";
+		os = conn.getOutputStream();
+		os.write(input.getBytes());
+		os.flush();
+		response = readInputStream(conn.getInputStream());
 		// System.out.println(format(response));
 		
 		// john from HR
-		url = new URL("http://localhost:8080/jbpm-console/rest/task/query?potentialOwner=john&processInstanceId=" + processInstanceId);
+		url = new URL("http://localhost:8080/kie-server/services/rest/server/queries/tasks/instances/process/" + processInstanceId);
 		conn = (HttpURLConnection) url.openConnection();
 		conn.setRequestMethod("GET");
 		conn.setRequestProperty("Authorization", "Basic " + Base64Util.encode("john:john"));
-		response = new BufferedReader(new InputStreamReader((conn.getInputStream()))).readLine();
-		// System.out.println(format(response));
-		taskId = getXPathValue(response, "/task-summary-list-response/task-summary/id");
-		name = getXPathValue(response, "/task-summary-list-response/task-summary/name");
-		description = getXPathValue(response, "/task-summary-list-response/task-summary/description");
+		response = readInputStream(conn.getInputStream());
+		// System.out.println(response);
+		taskId = getXPathValue(response, "/task-summary-list/task-summary/task-id");
+		name = getXPathValue(response, "/task-summary-list/task-summary/task-name");
+		description = getXPathValue(response, "/task-summary-list/task-summary/task-description");
 		System.out.println("'john' completing task " + name + ": " + description);
-		url = new URL("http://localhost:8080/jbpm-console/rest/task/" + taskId + "/claim");
+		url = new URL("http://localhost:8080/kie-server/services/rest/server/containers/evaluation_1.0.0-SNAPSHOT/tasks/" + taskId + "/states/claimed");
 		conn = (HttpURLConnection) url.openConnection();
-		conn.setRequestMethod("POST");
+		conn.setRequestMethod("PUT");
 		conn.setRequestProperty("Authorization", "Basic " + Base64Util.encode("john:john"));
-		response = new BufferedReader(new InputStreamReader((conn.getInputStream()))).readLine();
+		response = readInputStream(conn.getInputStream());
 		// System.out.println(format(response));
-		url = new URL("http://localhost:8080/jbpm-console/rest/task/" + taskId + "/start");
+		url = new URL("http://localhost:8080/kie-server/services/rest/server/containers/evaluation_1.0.0-SNAPSHOT/tasks/" + taskId + "/states/started");
 		conn = (HttpURLConnection) url.openConnection();
-		conn.setRequestMethod("POST");
+		conn.setRequestMethod("PUT");
 		conn.setRequestProperty("Authorization", "Basic " + Base64Util.encode("john:john"));
-		response = new BufferedReader(new InputStreamReader((conn.getInputStream()))).readLine();
+		response = readInputStream(conn.getInputStream());
 		// System.out.println(format(response));
-		url = new URL("http://localhost:8080/jbpm-console/rest/task/" + taskId + "/complete?map_performance=acceptable");
+		url = new URL("http://localhost:8080/kie-server/services/rest/server/containers/evaluation_1.0.0-SNAPSHOT/tasks/" + taskId + "/states/completed");
 		conn = (HttpURLConnection) url.openConnection();
-		conn.setRequestMethod("POST");
+		conn.setRequestMethod("PUT");
+		conn.setRequestProperty("Content-Type", "application/json");
 		conn.setRequestProperty("Authorization", "Basic " + Base64Util.encode("john:john"));
-		response = new BufferedReader(new InputStreamReader((conn.getInputStream()))).readLine();
+		conn.setDoOutput(true);
+		input = "{ \"performance\": \"10\" }";
+		os = conn.getOutputStream();
+		os.write(input.getBytes());
+		os.flush();
+		response = readInputStream(conn.getInputStream());
 		// System.out.println(format(response));
 
 		// mary from PM
-		url = new URL("http://localhost:8080/jbpm-console/rest/task/query?potentialOwner=mary&processInstanceId=" + processInstanceId);
+		url = new URL("http://localhost:8080/kie-server/services/rest/server/queries/tasks/instances/process/" + processInstanceId);
 		conn = (HttpURLConnection) url.openConnection();
 		conn.setRequestMethod("GET");
 		conn.setRequestProperty("Authorization", "Basic " + Base64Util.encode("mary:mary"));
-		response = new BufferedReader(new InputStreamReader((conn.getInputStream()))).readLine();
-		// System.out.println(format(response));
-		taskId = getXPathValue(response, "/task-summary-list-response/task-summary/id");
-		name = getXPathValue(response, "/task-summary-list-response/task-summary/name");
-		description = getXPathValue(response, "/task-summary-list-response/task-summary/description");
+		response = readInputStream(conn.getInputStream());
+		// System.out.println(response);
+		taskId = getXPathValue(response, "/task-summary-list/task-summary/task-id");
+		name = getXPathValue(response, "/task-summary-list/task-summary/task-name");
+		description = getXPathValue(response, "/task-summary-list/task-summary/task-description");
 		System.out.println("'mary' completing task " + name + ": " + description);
-		url = new URL("http://localhost:8080/jbpm-console/rest/task/" + taskId + "/claim");
+		url = new URL("http://localhost:8080/kie-server/services/rest/server/containers/evaluation_1.0.0-SNAPSHOT/tasks/" + taskId + "/states/claimed");
 		conn = (HttpURLConnection) url.openConnection();
-		conn.setRequestMethod("POST");
+		conn.setRequestMethod("PUT");
 		conn.setRequestProperty("Authorization", "Basic " + Base64Util.encode("mary:mary"));
-		response = new BufferedReader(new InputStreamReader((conn.getInputStream()))).readLine();
+		response = readInputStream(conn.getInputStream());
 		// System.out.println(format(response));
-		url = new URL("http://localhost:8080/jbpm-console/rest/task/" + taskId + "/start");
+		url = new URL("http://localhost:8080/kie-server/services/rest/server/containers/evaluation_1.0.0-SNAPSHOT/tasks/" + taskId + "/states/started");
 		conn = (HttpURLConnection) url.openConnection();
-		conn.setRequestMethod("POST");
+		conn.setRequestMethod("PUT");
 		conn.setRequestProperty("Authorization", "Basic " + Base64Util.encode("mary:mary"));
-		response = new BufferedReader(new InputStreamReader((conn.getInputStream()))).readLine();
+		response = readInputStream(conn.getInputStream());
 		// System.out.println(format(response));
-		url = new URL("http://localhost:8080/jbpm-console/rest/task/" + taskId + "/complete?map_performance=acceptable");
+		url = new URL("http://localhost:8080/kie-server/services/rest/server/containers/evaluation_1.0.0-SNAPSHOT/tasks/" + taskId + "/states/completed");
 		conn = (HttpURLConnection) url.openConnection();
-		conn.setRequestMethod("POST");
+		conn.setRequestMethod("PUT");
+		conn.setRequestProperty("Content-Type", "application/json");
 		conn.setRequestProperty("Authorization", "Basic " + Base64Util.encode("mary:mary"));
-		response = new BufferedReader(new InputStreamReader((conn.getInputStream()))).readLine();
+		conn.setDoOutput(true);
+		input = "{ \"performance\": \"10\" }";
+		os = conn.getOutputStream();
+		os.write(input.getBytes());
+		os.flush();
+		response = readInputStream(conn.getInputStream());
 		// System.out.println(format(response));
 
 		System.out.println("Process instance completed");
+	}
+	
+	private static String readInputStream(InputStream inputStream) throws IOException {
+		StringBuffer sb = new StringBuffer();
+		BufferedReader br = new BufferedReader(new InputStreamReader((inputStream)));
+		String read;
+		while((read = br.readLine()) != null) {
+		    sb.append(read + System.lineSeparator());
+		}
+		return sb.toString();
 	}
 	
 	private static TaskSummary findTask(List<TaskSummary> tasks, long processInstanceId) {

@@ -14,7 +14,7 @@
   <description>Parent POM for the evaluation examples</description>
 
   <properties>
-    <jbpm.version>6.2.0-SNAPSHOT</jbpm.version>
+    <jbpm.version>7.6.0.Final</jbpm.version>
   </properties>
 
   <repositories>
@@ -35,14 +35,14 @@
 
   <modules>
     <module>remote-java-client</module>
-    <module>kjar-from-guvnor</module>
+    <!--module>kjar-from-guvnor</module-->
   </modules>
   
   <dependencyManagement>
     <dependencies>
       <dependency>
         <groupId>org.kie</groupId>
-        <artifactId>kie-parent-with-dependencies</artifactId>
+        <artifactId>kie-bom</artifactId>
         <type>pom</type>
         <version>${jbpm.version}</version>
         <scope>import</scope>

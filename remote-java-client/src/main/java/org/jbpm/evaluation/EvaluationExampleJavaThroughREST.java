@@ -1,16 +1,17 @@
 package org.jbpm.evaluation;
 
-import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.kie.api.runtime.KieSession;
-import org.kie.api.runtime.manager.RuntimeEngine;
-import org.kie.api.runtime.process.ProcessInstance;
-import org.kie.api.task.TaskService;
-import org.kie.api.task.model.TaskSummary;
-import org.kie.remote.client.api.RemoteRuntimeEngineFactory;
+import org.kie.server.api.model.instance.ProcessInstance;
+import org.kie.server.api.model.instance.TaskSummary;
+import org.kie.server.client.KieServicesClient;
+import org.kie.server.client.KieServicesConfiguration;
+import org.kie.server.client.KieServicesFactory;
+import org.kie.server.client.ProcessServicesClient;
+import org.kie.server.client.QueryServicesClient;
+import org.kie.server.client.UserTaskServicesClient;
 
 /**
  * Example that uses the remote Java Client (through REST) to connect to the execution server
@@ -27,67 +28,64 @@ import org.kie.remote.client.api.RemoteRuntimeEngineFactory;
 public class EvaluationExampleJavaThroughREST {
 
 	public static void main(String[] args) throws Exception {
-		RuntimeEngine engine = RemoteRuntimeEngineFactory.newRestBuilder()
-			.addUrl(new URL("http://localhost:8080/jbpm-console"))
-			.addUserName("krisv").addPassword("krisv")
-			.addDeploymentId("org.jbpm:Evaluation:1.0")
-				.build();
-		KieSession ksession = engine.getKieSession();
-		TaskService taskService = engine.getTaskService();
+		KieServicesConfiguration config =  KieServicesFactory.newRestConfiguration(
+			"http://localhost:8080/kie-server/services/rest/server", "krisv", "krisv");
+		KieServicesClient client = KieServicesFactory.newKieServicesClient(config);
+		ProcessServicesClient processServices = client.getServicesClient(ProcessServicesClient.class);
+		UserTaskServicesClient taskServices = client.getServicesClient(UserTaskServicesClient.class);
 		
 		// start a new process instance
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("employee", "krisv");
 		params.put("reason", "Yearly performance evaluation");
-		ProcessInstance processInstance = 
-			ksession.startProcess("evaluation", params);
-		System.out.println("Start Evaluation process " + processInstance.getId());
+		Long processInstanceId = processServices.startProcess("evaluation_1.0.0-SNAPSHOT", "evaluation", params);
+		System.out.println("Start Evaluation process " + processInstanceId);
 		
 		// complete Self Evaluation
-		List<TaskSummary> tasks = taskService.getTasksAssignedAsPotentialOwner("krisv", "en-UK");
-		TaskSummary task = findTask(tasks, processInstance.getId());
+		List<TaskSummary> tasks = taskServices.findTasksAssignedAsPotentialOwner("krisv", 0, 10);
+		TaskSummary task = findTask(tasks, processInstanceId);
 		System.out.println("'krisv' completing task " + task.getName() + ": " + task.getDescription());
-		taskService.start(task.getId(), "krisv");
+		taskServices.startTask("evaluation_1.0.0-SNAPSHOT", task.getId(), "krisv");
 		Map<String, Object> results = new HashMap<String, Object>();
-		results.put("performance", "exceeding");
-		taskService.complete(task.getId(), "krisv", results);
+		results.put("performance", "10");
+		taskServices.completeTask("evaluation_1.0.0-SNAPSHOT", task.getId(), "krisv", results);
 		
-		// john from HR
-		engine = RemoteRuntimeEngineFactory.newRestBuilder()
-			.addUrl(new URL("http://localhost:8080/jbpm-console"))
-			.addUserName("john").addPassword("john")
-			.addDeploymentId("org.jbpm:Evaluation:1.0")
-				.build();
-		ksession = engine.getKieSession();
-		taskService = engine.getTaskService();
 		
-		tasks = taskService.getTasksAssignedAsPotentialOwner("john", "en-UK");
-		task = findTask(tasks, processInstance.getId());
+	    // john from HR
+		config =  KieServicesFactory.newRestConfiguration(
+			"http://localhost:8080/kie-server/services/rest/server", "john", "john");
+		client = KieServicesFactory.newKieServicesClient(config);
+		taskServices = client.getServicesClient(UserTaskServicesClient.class);
+		
+		tasks = taskServices.findTasksAssignedAsPotentialOwner("john", 0, 10);
+		task = findTask(tasks, processInstanceId);
 		System.out.println("'john' completing task " + task.getName() + ": " + task.getDescription());
-		taskService.claim(task.getId(), "john");
-		taskService.start(task.getId(), "john");
+		taskServices.claimTask("evaluation_1.0.0-SNAPSHOT", task.getId(), "john");
+		taskServices.startTask("evaluation_1.0.0-SNAPSHOT", task.getId(), "john");
 		results = new HashMap<String, Object>();
-		results.put("performance", "acceptable");
-		taskService.complete(task.getId(), "john", results);
+		results.put("performance", "9");
+		taskServices.completeTask("evaluation_1.0.0-SNAPSHOT", task.getId(), "john", results);
 		
 		// mary from PM
-		engine = RemoteRuntimeEngineFactory.newRestBuilder()
-			.addUrl(new URL("http://localhost:8080/jbpm-console"))
-			.addUserName("mary").addPassword("mary")
-			.addDeploymentId("org.jbpm:Evaluation:1.0")
-				.build();
-		ksession = engine.getKieSession();
-		taskService = engine.getTaskService();
-
-		tasks = taskService.getTasksAssignedAsPotentialOwner("mary", "en-UK");
-		task = findTask(tasks, processInstance.getId());
-		System.out.println("'mary' completing task " + task.getName() + ": " + task.getDescription());
-		taskService.claim(task.getId(), "mary");
-		taskService.start(task.getId(), "mary");
-		results = new HashMap<String, Object>();
-		results.put("performance", "outstanding");
-		taskService.complete(task.getId(), "mary", results);
+		config =  KieServicesFactory.newRestConfiguration(
+			"http://localhost:8080/kie-server/services/rest/server", "mary", "mary");
+		client = KieServicesFactory.newKieServicesClient(config);
+		taskServices = client.getServicesClient(UserTaskServicesClient.class);
 		
+		tasks = taskServices.findTasksAssignedAsPotentialOwner("mary", 0, 10);
+		task = findTask(tasks, processInstanceId);
+		System.out.println("'mary' completing task " + task.getName() + ": " + task.getDescription());
+		taskServices.claimTask("evaluation_1.0.0-SNAPSHOT", task.getId(), "mary");
+		taskServices.startTask("evaluation_1.0.0-SNAPSHOT", task.getId(), "mary");
+		results = new HashMap<String, Object>();
+		results.put("performance", "10");
+		taskServices.completeTask("evaluation_1.0.0-SNAPSHOT", task.getId(), "mary", results);
+		
+		QueryServicesClient queryServices = client.getServicesClient(QueryServicesClient.class);
+		ProcessInstance processInstance = queryServices.findProcessInstanceById(processInstanceId);
+		if (processInstance.getState() != 2) {
+			throw new RuntimeException("Process instance not completed");
+		}
 		System.out.println("Process instance completed");
 	}
 	
